@@ -4,7 +4,7 @@ Audit PEFT adapters for privacy backdoors in federated learning.
 
 **Author:** Pedro Sordo Martínez (amurlaniakea@gmail.com)
 **License:** AGPL-3.0-or-later
-**Status:** v0.2.0 — Adapter loader + synthetic data, 29 tests passing
+**Status:** v0.5.0 — Forensic reconstruction pipeline, 43 tests passing, GitHub Actions CI
 
 ## Overview
 
@@ -43,7 +43,11 @@ pip install -e ".[dev]"
 python -m pytest tests/ -v
 ```
 
+Expected: **43 passed**.
+
 ## Usage
+
+### Python API
 
 ```python
 from neuroimprint_detector import NeuroImprintDetector, GradientInverter
@@ -72,6 +76,35 @@ if result.reconstruction_possible:
     print(f"Quality: {inversion.inversion_quality:.2f}")
 ```
 
+### CLI
+
+```bash
+# Basic audit
+neuroimprint-audit --path /path/to/adapter
+
+# Full forensic reconstruction with HF Hub tokenizer
+neuroimprint-audit --path /adapter --reconstruct --tokenizer-id Qwen/Qwen2-0.5B
+
+# Offline mode with local tokenizer
+neuroimprint-audit --path /adapter --reconstruct --tokenizer-id /path/to/local/tokenizer
+
+# Save report to JSON
+neuroimprint-audit --path /adapter --reconstruct --tokenizer-id Qwen/Qwen2-0.5B --output report.json
+
+# Verbose output
+neuroimprint-audit --path /adapter -v
+```
+
+### CLI Flags
+
+| Flag | Description |
+|---|---|
+| `--path` | Path to adapter file (.safetensors, .bin) or directory (required) |
+| `--reconstruct` | Attempt to reconstruct memorized samples |
+| `--tokenizer-id` | HF Hub ID (e.g., `Qwen/Qwen2-0.5B`) or local path to tokenizer |
+| `--output`, `-o` | Output JSON report file path |
+| `--verbose`, `-v` | Print detailed analysis |
+
 ## Results (from paper)
 
 | Model | Optimizer | Reconstruction Rate | Semantic Similarity |
@@ -82,6 +115,21 @@ if result.reconstruction_possible:
 | GPT-2 | AdamW | 74.4% | 0.779 |
 | Qwen2-1.5B | SGD | 71.4% | 0.997 |
 | Llama3-3B | SGD | 75.0% | 0.997 |
+
+## Stack
+
+| Component | Version | Description |
+|---|---|---|
+| Detector | v0.1.0 | Weight analysis for backdoor signatures |
+| Inverter | v0.1.0 | Closed-form gradient inversion |
+| Loader | v0.2.0 | HF adapter loading + backdoor candidate extraction |
+| Synthetics | v0.2.0 | Clean/backdoored adapter generation |
+| Estimator | v0.4.0 | Original weight estimation from trained adapter |
+| Tokenizer | v0.5.0 | Text reconstruction via HF tokenizers (online + offline) |
+| CLI | v0.5.0 | `neuroimprint-audit` command with `--reconstruct` |
+| CI | v0.5.0 | GitHub Actions (Python 3.10, 3.11) |
+
+**43 tests passing** — full unit + integration coverage.
 
 ## References
 
