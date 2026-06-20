@@ -4,7 +4,7 @@ Audit PEFT adapters for privacy backdoors in federated learning.
 
 **Author:** Pedro Sordo Martínez (amurlaniakea@gmail.com)
 **License:** AGPL-3.0-or-later
-**Status:** v0.1.0 — Research & core implementation
+**Status:** v0.2.0 — Adapter loader + synthetic data, 29 tests passing
 
 ## Overview
 
