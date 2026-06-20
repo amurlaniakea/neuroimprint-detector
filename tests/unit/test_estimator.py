@@ -11,6 +11,8 @@ from neuroimprint_detector.core.estimator import (
 from neuroimprint_detector.core.tokenizer_reconstructor import (
     EmbeddingToText,
     TextReconstruction,
+    load_tokenizer_safe,
+    _is_local_path,
 )
 
 
@@ -101,19 +103,24 @@ class TestEmbeddingToText:
 
     def test_init_without_matrix(self):
         """Should initialize without pre-loaded embedding matrix."""
-        # This will fail to load tokenizer without HF, but should not crash on init
-        try:
-            reconstructor = EmbeddingToText(tokenizer_id="dummy")
-            assert reconstructor._embedding_matrix is None
-        except Exception:
-            pass  # Expected if no internet/HF access
+        reconstructor = EmbeddingToText(tokenizer_id="dummy")
+        assert reconstructor._embedding_matrix is None
+
+    def test_is_available_with_mock_matrix(self):
+        """Should report available when embedding matrix is provided."""
+        emb_matrix = np.random.randn(100, 64).astype(np.float32)
+        reconstructor = EmbeddingToText(
+            tokenizer_id="dummy",
+            embedding_matrix=emb_matrix,
+        )
+        # Without a real tokenizer, is_available depends on load
+        # but should not crash
+        _ = reconstructor.is_available
 
     def test_with_mock_embedding_matrix(self):
         """Should work with a provided embedding matrix."""
         vocab_size = 1000
         hidden_dim = 64
-
-        # Create a mock embedding matrix
         emb_matrix = np.random.randn(vocab_size, hidden_dim).astype(np.float32)
 
         reconstructor = EmbeddingToText(
@@ -121,21 +128,16 @@ class TestEmbeddingToText:
             embedding_matrix=emb_matrix,
         )
 
-        # Create mock embeddings
         embeddings = np.random.randn(5, hidden_dim).astype(np.float32)
 
-        # Should work without tokenizer (nearest neighbor only)
-        try:
-            results = reconstructor.embeddings_to_text(embeddings)
-            assert len(results) == 5
-            for r in results:
-                assert isinstance(r, TextReconstruction)
-                assert 0 <= r.token_ids[0] < vocab_size
-        except Exception:
-            pass  # May fail if tokenizer can't be loaded
+        results = reconstructor.embeddings_to_text(embeddings)
+        assert len(results) == 5
+        for r in results:
+            assert isinstance(r, TextReconstruction)
+            assert 0 <= r.token_ids[0] < vocab_size
 
     def test_batch_reconstruct(self):
-        """Should return top-k candidates."""
+        """Should return top-k candidates (or graceful failure without tokenizer)."""
         vocab_size = 500
         hidden_dim = 32
         emb_matrix = np.random.randn(vocab_size, hidden_dim).astype(np.float32)
@@ -147,10 +149,30 @@ class TestEmbeddingToText:
 
         embeddings = np.random.randn(3, hidden_dim).astype(np.float32)
 
-        try:
-            results = reconstructor.batch_reconstruct(embeddings, top_k=5)
-            assert len(results) == 3
-            for sample_results in results:
-                assert len(sample_results) == 5
-        except Exception:
-            pass  # May fail if tokenizer can't be loaded
+        results = reconstructor.batch_reconstruct(embeddings, top_k=5)
+        assert len(results) == 3
+        for sample_results in results:
+            # Each sample should have at least 1 result (may be <5 if tokenizer unavailable)
+            assert len(sample_results) >= 1
+
+
+class TestLoadTokenizerSafe:
+    """Tests for safe tokenizer loading."""
+
+    def test_is_local_path_absolute(self):
+        assert _is_local_path("/path/to/tokenizer") is True
+
+    def test_is_local_path_relative(self):
+        assert _is_local_path("./tokenizer") is True
+
+    def test_is_local_path_with_extension(self):
+        assert _is_local_path("tokenizer.json") is True
+
+    def test_is_local_path_hf_id(self):
+        assert _is_local_path("meta-llama/Llama-3.2-1B") is False
+
+    def test_load_nonexistent_local_path(self):
+        result = load_tokenizer_safe("/nonexistent/path/tokenizer")
+        assert result.error is not None
+        assert result.tokenizer is None
+

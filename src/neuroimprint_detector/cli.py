@@ -169,13 +169,24 @@ def _reconstruct_samples(
     # Text reconstruction with tokenizer
     if tokenizer_id and embeddings.shape[0] > 0:
         try:
-            from neuroimprint_detector.core.tokenizer_reconstructor import EmbeddingToText
-            reconstructor = EmbeddingToText(tokenizer_id=tokenizer_id)
-            texts = reconstructor.embeddings_to_text(embeddings[:10])  # Limit to first 10
-            result["reconstructed_texts"] = [
-                {"text": t.text, "confidence": round(t.confidence, 4)}
-                for t in texts
-            ]
+            from neuroimprint_detector.core.tokenizer_reconstructor import load_tokenizer_safe
+            tok_result = load_tokenizer_safe(tokenizer_id)
+            if tok_result.tokenizer is not None:
+                from neuroimprint_detector.core.tokenizer_reconstructor import EmbeddingToText
+                reconstructor = EmbeddingToText(
+                    tokenizer_id=tokenizer_id,
+                    embedding_matrix=tok_result.embedding_matrix,
+                )
+                if reconstructor.is_available:
+                    texts = reconstructor.embeddings_to_text(embeddings[:10])
+                    result["reconstructed_texts"] = [
+                        {"text": t.text, "confidence": round(t.confidence, 4)}
+                        for t in texts
+                    ]
+                else:
+                    result["tokenizer_warning"] = reconstructor.load_error
+            else:
+                result["tokenizer_warning"] = tok_result.error
         except Exception as e:
             result["tokenizer_error"] = str(e)
 
