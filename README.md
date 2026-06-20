@@ -88,3 +88,5 @@ if result.reconstruction_possible:
 - **Shi et al. (2026)** — [From Efficiency to Leakage: Privacy Backdoor in Federated Language Model Fine-Tuning](https://arxiv.org/abs/2606.20553)
 - **Hu et al. (2022)** — [LoRA: Low-Rank Adaptation of Large Language Models](https://arxiv.org/abs/2106.09685)
 - **Zhu et al. (2019)** — [Deep Leakage from Gradients](https://arxiv.org/abs/1906.08935)
+- **Zhao et al. (2020)** — [iDLG: Improved Deep Leakage from Gradients](https://arxiv.org/abs/2001.02610)
+- **Wang et al. (2020)** — [Beyond Inferring Class Representatives: User-Level Privacy Leakage from Federated Learning](https://arxiv.org/abs/1911.08935)

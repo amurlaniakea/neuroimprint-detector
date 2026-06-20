@@ -25,6 +25,9 @@ dev = [
     "pytest-cov>=5.0.0",
 ]
 
+[project.scripts]
+neuroimprint-audit = "neuroimprint_detector.cli:main"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v --tb=short"
